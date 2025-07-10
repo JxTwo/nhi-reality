@@ -1,0 +1,17 @@
+# Core Django
+Django>=4.2,<5.0
+
+# WSGI server
+gunicorn
+
+# PostgreSQL support
+psycopg2-binary
+
+# Environment variable support
+django-environ
+
+whitenoise
+
+# Optional but useful tools
+django-debug-toolbar  # for local debugging
+markdown              # if you're allowing markdown content

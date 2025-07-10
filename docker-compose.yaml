@@ -1,0 +1,31 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nhi-reality-web
+    command: gunicorn core.wsgi:application --chdir /app --bind 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app
+    depends_on:
+      - db
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=core.settings
+      - DATABASE_URL=postgres://nhi_user:nhi_pass@db:5432/nhi_db
+
+  db:
+    image: postgres:15
+    container_name: nhi-reality-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nhi_db
+      POSTGRES_USER: nhi_user
+      POSTGRES_PASSWORD: nhi_pass
+    volumes:
+      - nhi_pgdata:/var/lib/postgresql/data
+
+volumes:
+  nhi_pgdata:
