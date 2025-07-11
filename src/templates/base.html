@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NHI Reality</title>
+</head>
+<body>
+    <header>
+        <h1><a href="{% url 'home' %}">NHI Reality</a></h1>
+        <nav>
+            <a href="{% url 'disclosure_list' %}">Disclosures</a> |
+            <a href="{% url 'history_list' %}">History</a> |
+            <a href="{% url 'news_list' %}">News</a> |
+            <a href="{% url 'evidence_list' %}">Evidence</a> |
+            <a href="{% url 'secrecy_list' %}">Secrecy</a> |
+            <a href="{% url 'consciousness_list' %}">Consciousness</a>
+        </nav>
+        <hr>
+    </header>
+
+    {% block content %}
+    {% endblock %}
+</body>
+</html>

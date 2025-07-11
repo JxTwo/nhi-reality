@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Historical Timeline</h2>
+<ul>
+  {% for event in timeline %}
+    <li><strong>{{ event.title }}</strong> — {{ event.date }}</li>
+  {% empty %}
+    <li>No events yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

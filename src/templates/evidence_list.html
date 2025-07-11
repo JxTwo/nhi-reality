@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Physical and Sensor Evidence</h2>
+<ul>
+  {% for e in evidence %}
+    <li><strong>{{ e.title }}</strong> — {{ e.evidence_type }}</li>
+  {% empty %}
+    <li>No evidence recorded yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

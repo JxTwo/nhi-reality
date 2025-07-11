@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Disclosures</h2>
+<ul>
+  {% for d in disclosures %}
+    <li><strong>{{ d.title }}</strong> — {{ d.date }}</li>
+  {% empty %}
+    <li>No disclosures available.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

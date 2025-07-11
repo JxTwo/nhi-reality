@@ -28,7 +28,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # your apps go here
+    'disclosure',
+    'evidence',
+    'history',
+    'news',
+    'secrecy',
+    'consciousness',
 ]
 
 MIDDLEWARE = [

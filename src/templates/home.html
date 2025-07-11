@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Latest Disclosures</h2>
+<ul>
+  {% for d in disclosures %}
+    <li>{{ d.title }} — {{ d.date }}</li>
+  {% empty %}
+    <li>No disclosures yet.</li>
+  {% endfor %}
+</ul>
+
+<h2>Recent News</h2>
+<ul>
+  {% for n in news %}
+    <li>{{ n.title }} — {{ n.published_at }}</li>
+  {% empty %}
+    <li>No news articles yet.</li>
+  {% endfor %}
+</ul>
+
+<h2>Historical Events</h2>
+<ul>
+  {% for h in timeline %}
+    <li>{{ h.title }} — {{ h.date }}</li>
+  {% empty %}
+    <li>No history yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

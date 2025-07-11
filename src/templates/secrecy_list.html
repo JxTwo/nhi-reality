@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Secrecy Cases</h2>
+<ul>
+  {% for s in secrecy %}
+    <li><strong>{{ s.title }}</strong> — {% if s.confirmed %}Confirmed{% else %}Unconfirmed{% endif %}</li>
+  {% empty %}
+    <li>No secrecy cases recorded.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
