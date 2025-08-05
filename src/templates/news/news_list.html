@@ -1,11 +1,32 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>News Articles</h2>
-<ul>
-  {% for article in news %}
-    <li><a href="{{ article.url }}">{{ article.title }}</a> — {{ article.published_at }}</li>
-  {% empty %}
-    <li>No news articles found.</li>
+  <h1>Latest News</h1>
+
+  {% for item in combined_news %}
+    <div style="margin-bottom: 2em; border-bottom: 1px solid #ccc; padding-bottom: 1em;">
+      {% if item.content_type == "article" %}
+        <h2><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h2>
+        <p><strong>{{ item.published_at }}</strong></p>
+        <p>{{ item.summary|safe }}</p>
+        <p><em>Source: {{ item.source.name }}</em></p>
+      {% elif item.content_type == "video" %}
+        <h2><a href="https://www.youtube.com/watch?v={{ item.video_id }}" target="_blank">{{ item.title }}</a></h2>
+        <p><strong>{{ item.published_at }}</strong></p>
+        <div>
+          <iframe width="560" height="315"
+                  src="https://www.youtube.com/embed/{{ item.video_id }}"
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen>
+          </iframe>
+        </div>
+        <p>{{ item.description|truncatewords:30 }}</p>
+        <p><em>Source: {{ item.source.name }}</em></p>
+      {% endif %}
+    </div>
   {% endfor %}
-</ul>
+
+  {% if combined_news|length == 0 %}
+    <p>No news yet.</p>
+  {% endif %}
 {% endblock %}

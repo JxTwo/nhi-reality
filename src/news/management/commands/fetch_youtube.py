@@ -3,22 +3,11 @@ from django.core.management.base import BaseCommand
 from django.utils.dateparse import parse_datetime
 from django.conf import settings
 from news.models import VideoSource, Video
-from urllib.parse import urlencode
+from ...config.keywords import is_relevant_video
+from ...config.youtube_channels import CHANNELS
 
 YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v="
-
-CHANNELS = [
-    {
-        "name": "NewsNation",
-        "channel_id": "UCXIJgqnII2ZOINSWNOGFThA",  # Ross Coulthart's network
-    },
-    {
-        "name": "Theories of Everything",
-        "channel_id": "UCt9S4r2X0yGDU8qrbnOAfvg",  # Curt Jaimungal
-    },
-]
-
 
 class Command(BaseCommand):
     help = "Fetch latest UAP/NHI-related videos from YouTube channels"
@@ -31,13 +20,14 @@ class Command(BaseCommand):
 
         for entry in CHANNELS:
             source, _ = VideoSource.objects.get_or_create(
-                name=entry["name"], channel_id=entry["channel_id"]
+                name=entry["name"],
+                channel_id=entry["channel_id"]
             )
 
             params = {
                 "part": "snippet",
                 "channelId": entry["channel_id"],
-                "maxResults": 10,
+                "maxResults": 50,
                 "order": "date",
                 "type": "video",
                 "key": api_key,
@@ -49,9 +39,13 @@ class Command(BaseCommand):
                 continue
 
             for item in resp.json().get("items", []):
-                video_id = item["id"]["videoId"]
                 snippet = item["snippet"]
+                video_id = item["id"]["videoId"]
                 video_url = f"{YOUTUBE_VIDEO_URL}{video_id}"
+
+                if not is_relevant_video(snippet):
+                    # print(f"video not relevant: {snippet}")
+                    continue
 
                 if Video.objects.filter(url=video_url).exists():
                     continue
