@@ -4,11 +4,14 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: nhi-reality-web
-    command: gunicorn core.wsgi:application --chdir /app --bind 0.0.0.0:8000
+    command: python3 manage.py runserver 0.0.0.0:8000
+    # command: gunicorn core.wsgi:application --chdir /app --bind 0.0.0.0:8000
     ports:
       - "8000:8000"
     volumes:
       - ./src:/app
+    tty: true
+    stdin_open: true
     depends_on:
       - db
     environment:

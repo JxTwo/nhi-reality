@@ -1,3 +1,5 @@
+bs4
+
 # Core Django
 Django>=4.2,<5.0
 
@@ -7,11 +9,17 @@ gunicorn
 # PostgreSQL support
 psycopg2-binary
 
+python-dateutil
+
 # Environment variable support
 django-environ
 
+requests
+
 whitenoise
 
-# Optional but useful tools
-django-debug-toolbar  # for local debugging
-markdown              # if you're allowing markdown content
+# tools
+django-debug-toolbar
+markdown
+
+feedparser

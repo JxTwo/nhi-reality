@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Recent News</h2>
+<ul>
+  {% for n in news %}
+    <li>{{ n.title }} — {{ n.published_at }}</li>
+  {% empty %}
+    <li>No news articles yet.</li>
+  {% endfor %}
+</ul>
+
+{% endblock %}
