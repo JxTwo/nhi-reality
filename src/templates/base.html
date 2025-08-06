@@ -5,13 +5,23 @@
     <title>NHI Reality</title>
 </head>
 <body>
-    <header>
-        <h1><a href="{% url 'home' %}">NHI Reality</a></h1>
-        <nav>
-            <a href="{% url 'news_list' %}">News</a>
-        </nav>
-        <hr>
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 1em 0;">
+        <div>
+            <h1 style="margin: 0;">non-human intelligence news</h1>
+        </div>
+        <div style="text-align: right; font-size: 0.9em;">
+            <span>Enjoy this site? Support ongoing development:</span><br><br>
+            <a href="https://www.buymeacoffee.com/jjbennett" target="_blank"
+            style="color: #444; background-color: #f0f0f0;
+                    border: 1px solid #ccc; border-radius: 4px;
+                    padding: 4px 8px; text-decoration: none;
+                    font-size: 0.85em;">
+                Buy me a coffee
+            </a>
+        </div>
     </header>
+
+    <hr>
 
     {% block content %}
     {% endblock %}
