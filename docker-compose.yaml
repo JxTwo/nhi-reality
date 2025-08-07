@@ -16,6 +16,7 @@ services:
       - db
     environment:
       - DEBUG=1
+      - DJANGO_ENV=development
       - DJANGO_SETTINGS_MODULE=core.settings
       - DATABASE_URL=postgres://nhi_user:nhi_pass@db:5432/nhi_db
 

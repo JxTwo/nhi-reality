@@ -8,9 +8,13 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, []),
 )
 
-# Load environment variables from .env if present
+# Set BASE_DIR
 BASE_DIR = Path(__file__).resolve().parent.parent
-environ.Env.read_env(BASE_DIR / ".env")
+
+# Load correct .env file based on DJANGO_ENV
+DJANGO_ENV = os.getenv("DJANGO_ENV", "development")
+env_file = BASE_DIR / f".env.{DJANGO_ENV}"
+environ.Env.read_env(env_file)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env("SECRET_KEY", default="unsafe-default-key")
