@@ -9,6 +9,7 @@ NHI_KEYWORDS = [
     "hidden tech", "whistleblower", "debrief", "men in black",
     "unidentified", "crash retrieval", "david grusch", "ross coulthart",
     "gary nolan", "angels", "demons", "angelic", "demonic", "ultraterresterial",
+    "nonhuman intelligence",
 ]
 
 # Precompile pattern with word boundaries and optional spaces for multi-word phrases

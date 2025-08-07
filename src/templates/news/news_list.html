@@ -2,54 +2,63 @@
 {% block content %}
   <style>
     body {
+      background-color: #121212;
+      color: #e0e0e0;
       font-family: sans-serif;
       margin: 2rem;
     }
-    h1 {
-      font-size: 2em;
-      border-bottom: 2px solid #ddd;
-      padding-bottom: 0.5em;
-      margin-bottom: 1em;
+
+    a {
+      color: #90caf9;
+      text-decoration: none;
     }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    h1, h2 {
+      color: #ffffff;
+    }
+
     .news-item {
+      background-color: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 1em;
       margin-bottom: 2em;
-      padding-bottom: 1em;
-      border-bottom: 1px solid #ccc;
     }
-    .news-item h2 {
-      font-size: 1.3em;
-      margin-bottom: 0.2em;
-    }
-    .news-item p {
-      margin: 0.2em 0;
-    }
+
     .news-source {
       font-style: italic;
       font-size: 0.9em;
-      color: #555;
+      color: #aaaaaa;
     }
+
     .pagination {
       display: flex;
       justify-content: center;
       gap: 1em;
       margin-top: 2em;
     }
+
     .pagination a {
-      text-decoration: none;
+      color: #90caf9;
+      border: 1px solid #333;
       padding: 0.4em 0.7em;
-      border: 1px solid #ccc;
-      color: #333;
+      border-radius: 4px;
     }
-    .pagination .current {
-      font-weight: bold;
-      border: 2px solid #555;
-    }
-    .pagination-page-info {
+
+    .pagination .pagination-page-info {
       font-size: 0.9em;
-      color: #666;
+      color: #888;
       padding: 0.4em 0.7em;
     }
 
+    iframe {
+      border-radius: 4px;
+      max-width: 100%;
+    }
   </style>
 
   <h2>Latest Content</h2>
