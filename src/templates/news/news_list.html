@@ -28,11 +28,33 @@
       font-size: 0.9em;
       color: #555;
     }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 1em;
+      margin-top: 2em;
+    }
+    .pagination a {
+      text-decoration: none;
+      padding: 0.4em 0.7em;
+      border: 1px solid #ccc;
+      color: #333;
+    }
+    .pagination .current {
+      font-weight: bold;
+      border: 2px solid #555;
+    }
+    .pagination-page-info {
+      font-size: 0.9em;
+      color: #666;
+      padding: 0.4em 0.7em;
+    }
+
   </style>
 
   <h2>Latest Content</h2>
 
-  {% for item in combined_news %}
+  {% for item in page_obj.object_list %}
     <div class="news-item">
       {% if item.content_type == "article" %}
         <h2><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h2>
@@ -56,7 +78,21 @@
     </div>
   {% endfor %}
 
-  {% if combined_news|length == 0 %}
+  {% if page_obj.paginator.count == 0 %}
     <p>No news yet.</p>
   {% endif %}
+
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}">« Prev</a>
+    {% endif %}
+
+    <span class="pagination-page-info">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}">Next »</a>
+    {% endif %}
+  </div>
 {% endblock %}

@@ -3,6 +3,9 @@ bs4
 # Core Django
 Django>=4.2,<5.0
 
+celery[redis]
+django-celery-beat
+
 # WSGI server
 gunicorn
 

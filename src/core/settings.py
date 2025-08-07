@@ -28,10 +28,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_beat',
     'disclosure',
     'evidence',
     'history',
-    'news',
+    'news.apps.NewsConfig',
     'secrecy',
     'consciousness',
 ]
@@ -102,3 +103,14 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+
+CELERY_BROKER_URL = "redis://redis:6379/0"
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        # use DB 1 for caching (Celery uses 0)
+        'LOCATION': os.environ.get('REDIS_CACHE_URL', 'redis://redis:6379/1'),
+        'TIMEOUT': 300,
+    }
+}

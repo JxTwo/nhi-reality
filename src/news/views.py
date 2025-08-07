@@ -1,6 +1,8 @@
+from django.core.paginator import Paginator
 from django.shortcuts import render
 from news.models import NewsArticle, Video
 from core.utilities import normalize_date
+
 
 def news_list(request):
     articles = NewsArticle.objects.all()
@@ -18,6 +20,11 @@ def news_list(request):
         reverse=True
     )
 
+    paginator = Paginator(sorted_combined, 10)  # 10 items per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
     return render(request, "news/news_list.html", {
-        "combined_news": sorted_combined
+        "page_obj": page_obj
     })
+
