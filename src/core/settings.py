@@ -2,7 +2,10 @@ import os
 from pathlib import Path
 import environ
 
-DEBUG = os.getenv("DEBUG", "False") == "True"
+# Initialize environment
+env = environ.Env(
+    DEBUG=(bool, False),
+)
 
 ALLOWED_HOSTS = [
     "nhi-reality.fly.dev",
