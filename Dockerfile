@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.12-slim
 
 # Environment flags
 ENV PYTHONDONTWRITEBYTECODE=1

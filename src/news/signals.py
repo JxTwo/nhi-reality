@@ -5,10 +5,10 @@ from django.apps import apps
 
 def register_periodic_fetch():
     try:
-        schedule, _ = IntervalSchedule.objects.get_or_create(
-            every=60,
-            period=IntervalSchedule.MINUTES,
-        )
+        schedule_qs = IntervalSchedule.objects.filter(every=60, period=IntervalSchedule.MINUTES)
+        schedule = schedule_qs.first()
+        if not schedule:
+            schedule = IntervalSchedule.objects.create(every=60, period=IntervalSchedule.MINUTES)
 
         PeriodicTask.objects.update_or_create(
             name="Fetch New Content",
@@ -17,6 +17,6 @@ def register_periodic_fetch():
                 "task": "news.tasks.fetch_new_content",
             },
         )
-    except (OperationalError, ProgrammingError):
+    except (OperationalError, ProgrammingError) as e:
         # Database might not be ready during initial migrations
-        logging.warning("Skipped periodic task registration (DB not ready)")
+        logging.warning("Skipped periodic task registration (DB not ready): %s", str(e))

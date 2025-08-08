@@ -22,7 +22,12 @@ SECRET_KEY = env("SECRET_KEY", default="unsafe-default-key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
+DEFAULT_FLY_DOMAINS = [
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "nhi-reality.fly.dev",
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -108,7 +113,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
-CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 CACHES = {
     'default': {
