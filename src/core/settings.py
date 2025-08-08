@@ -11,6 +11,7 @@ ALLOWED_HOSTS = [
     "nhi-reality.fly.dev",
     "localhost",
     "127.0.0.1",
+    "0.0.0.0",
 ]
 
 # Set BASE_DIR

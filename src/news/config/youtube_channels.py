@@ -19,4 +19,14 @@ CHANNELS = [
         "channel_id": "UC5TkG80r8K0N9YtxzWsmJXA",
         "apply_filter": False,
     },
+    {
+        "name": "New Paradigm Institute",
+        "channel_id": "UCnrShHXCboC6fNzFFTOCCog",
+        "apply_filter": False,
+    },
+    {
+        "name": "The Sol Foundation",
+        "channel_id": "UCmqxtYQ_6scR7wlTmInRCxA",
+        "apply_filter": False,
+    },
 ]
