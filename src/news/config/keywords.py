@@ -1,7 +1,7 @@
 import re
 
 NHI_KEYWORDS = [
-    "UAP", "UFO", "alien", "aliens", "extraterrestrial", "non-human",
+    "UAP", "UFO", "extraterrestrial", "non-human",
     "NHI", "phenomenon", "phenomena", "disclosure", "crash",
     "space", "moon", "mars", "nasa", "aerospace", "orb", "tic tac",
     "abduction", "encounter", "reverse engineering",
