@@ -2,11 +2,13 @@ import os
 from pathlib import Path
 import environ
 
-# Initialize environment
-env = environ.Env(
-    DEBUG=(bool, False),
-    ALLOWED_HOSTS=(list, []),
-)
+DEBUG = os.getenv("DEBUG", "False") == "True"
+
+ALLOWED_HOSTS = [
+    "nhi-reality.fly.dev",
+    "localhost",
+    "127.0.0.1",
+]
 
 # Set BASE_DIR
 BASE_DIR = Path(__file__).resolve().parent.parent
