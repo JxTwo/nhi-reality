@@ -46,3 +46,17 @@ class Video(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class IngestionStatus(models.Model):
+    # Singleton row with fixed PK = 1
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    last_run_started = models.DateTimeField(null=True, blank=True)
+    last_success_any = models.DateTimeField(null=True, blank=True)          # task succeeded (even if 0 new)
+    last_success_with_new = models.DateTimeField(null=True, blank=True)     # succeeded AND added new items
+    last_error = models.TextField(null=True, blank=True)
+
+    @classmethod
+    def get(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

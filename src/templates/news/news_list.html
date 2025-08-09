@@ -35,6 +35,28 @@
       color: #aaaaaa;
     }
 
+    .filters {
+      display: flex;
+      gap: .75rem;
+      margin: .75rem 0 1rem 0;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      display: inline-block;
+      padding: .35rem .6rem;
+      border: 1px solid #333;
+      border-radius: 999px;
+      font-size: .9rem;
+      background: #191919;
+    }
+
+    .filter-pill.active {
+      font-weight: 700;
+      border-color: #444;
+      background: #222;
+    }
+
     .pagination {
       display: flex;
       justify-content: center;
@@ -61,23 +83,56 @@
     }
   </style>
 
-  <h2>Latest Content</h2>
+  {% if ingestion_status %}
+    <div style="font-size:0.9em;opacity:0.8">
+      {% if ingestion_status.last_success_with_new %}
+        Latest new content fetched at {{ ingestion_status.last_success_with_new|date:"Y-m-d H:i T" }}
+        <span>({{ ingestion_status.last_success_with_new|timesince }} ago)</span>
+      {% elif ingestion_status.last_success_any %}
+        Last fetch (no new items): {{ ingestion_status.last_success_any|date:"Y-m-d H:i T" }}
+        <span>({{ ingestion_status.last_success_any|timesince }} ago)</span>
+      {% elif ingestion_status.last_run_started %}
+        Fetch started: {{ ingestion_status.last_run_started|date:"Y-m-d H:i T" }}
+        <span>({{ ingestion_status.last_run_started|timesince }} ago)</span>
+      {% else %}
+        No fetch history yet.
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {# Filter pills #}
+  <nav class="filters" aria-label="Content filter">
+    <a class="filter-pill {% if filter == 'all' %}active{% endif %}"
+       href="{% url 'news_list' %}?type=all">
+      All ({{ counts.all }})
+    </a>
+    <a class="filter-pill {% if filter == 'articles' %}active{% endif %}"
+       href="{% url 'news_list' %}?type=articles">
+      Articles ({{ counts.articles }})
+    </a>
+    <a class="filter-pill {% if filter == 'videos' %}active{% endif %}"
+       href="{% url 'news_list' %}?type=videos">
+      Videos ({{ counts.videos }})
+    </a>
+  </nav>
 
   {% for item in page_obj.object_list %}
     <div class="news-item">
       {% if item.content_type == "article" %}
-        <h2><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h2>
+        <h2><a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a></h2>
         <p><strong>{{ item.published_at|date:"M. j, Y" }}</strong></p>
         <p>{{ item.summary|safe }}</p>
         <p class="news-source">Source: {{ item.source.name }}</p>
+
       {% elif item.content_type == "video" %}
-        <h2><a href="https://www.youtube.com/watch?v={{ item.video_id }}" target="_blank">{{ item.title }}</a></h2>
+        <h2><a href="https://www.youtube.com/watch?v={{ item.video_id }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a></h2>
         <p><strong>{{ item.published_at|date:"M. j, Y" }}</strong></p>
         <div>
           <iframe width="560" height="315"
                   src="https://www.youtube.com/embed/{{ item.video_id }}"
+                  title="{{ item.title }}"
                   frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowfullscreen>
           </iframe>
         </div>
@@ -93,7 +148,7 @@
 
   <div class="pagination">
     {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}">« Prev</a>
+      <a href="?type={{ filter }}&page={{ page_obj.previous_page_number }}">« Prev</a>
     {% endif %}
 
     <span class="pagination-page-info">
@@ -101,7 +156,7 @@
     </span>
 
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}">Next »</a>
+      <a href="?type={{ filter }}&page={{ page_obj.next_page_number }}">Next »</a>
     {% endif %}
   </div>
 {% endblock %}

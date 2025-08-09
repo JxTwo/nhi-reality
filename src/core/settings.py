@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 # Initialize environment
 env = environ.Env(
@@ -76,6 +77,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                "news.context_processors.ingestion_status",
             ],
         },
     },
@@ -83,10 +85,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database
-DATABASES = {
-    'default': env.db(),  # expects DATABASE_URL in .env
-}
+
+try:
+    DATABASES = {
+        'default': env.db('DATABASE_URL')
+    }
+except ImproperlyConfigured:
+    # No DATABASE_URL set — fall back to SQLite for builds/CI/etc.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'build.db',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -119,7 +130,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
-CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 CACHES = {
     'default': {
