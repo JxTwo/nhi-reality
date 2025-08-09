@@ -36,6 +36,11 @@ DEFAULT_FLY_DOMAINS = [
     "nhi-reality.fly.dev",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://nhi-reality.fly.dev",
+    # add "https://yourdomain.com" when you point one
+]
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -86,12 +91,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
+ON_FLY = bool(os.getenv("FLY_APP_NAME"))
+
 try:
-    DATABASES = {
-        'default': env.db('DATABASE_URL')
-    }
+    if ON_FLY:
+        # On Fly we require a real DB; fail fast if missing
+        DATABASES = {'default': env.db('DATABASE_URL')}
+    else:
+        # Local/CI can fall back to SQLite if DATABASE_URL is absent
+        DATABASES = {'default': env.db('DATABASE_URL')}
 except ImproperlyConfigured:
-    # No DATABASE_URL set — fall back to SQLite for builds/CI/etc.
+    if ON_FLY:
+        # Make it obvious in deploy logs if DATABASE_URL isn't set
+        raise
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -121,9 +133,11 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# --- Static files -----------------------------------------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Use hashed filenames + compression so Fly serves immutable assets cleanly
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Default auto field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
