@@ -135,7 +135,8 @@ USE_TZ = True
 
 # --- Static files -----------------------------------------------------------
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Write to /data so release_command can create files on Fly
+STATIC_ROOT = os.getenv("STATIC_ROOT", "/data/staticfiles")
 # Use hashed filenames + compression so Fly serves immutable assets cleanly
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
