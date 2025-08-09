@@ -1,4 +1,6 @@
 from django.db import models
+from urllib.parse import urlparse, parse_qs
+
 
 class NewsSource(models.Model):
     name = models.CharField(max_length=255)
@@ -32,7 +34,7 @@ class VideoSource(models.Model):
     def __str__(self):
         return self.name
 
-
+    
 class Video(models.Model):
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True)
@@ -46,6 +48,21 @@ class Video(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def channel_title(self) -> str:
+        return self.source.name if self.source else ""
+
+    @property
+    def video_id(self) -> str:
+        # Handles both youtube.com/watch?v=… and youtu.be/… forms
+        u = urlparse(self.url)
+        if u.netloc.endswith("youtu.be"):
+            return u.path.lstrip("/")
+        if u.netloc and "youtube" in u.netloc:
+            return parse_qs(u.query).get("v", [""])[0]
+        return ""
+
 
 
 class IngestionStatus(models.Model):

@@ -64,7 +64,14 @@ class Command(BaseCommand):
             self.stdout.write("Video already exists in the database.")
             return
 
-        source, _ = VideoSource.objects.get_or_create(name=channel_title, channel_id=channel_id)
+        source, _ = VideoSource.objects.get_or_create(
+            channel_id=channel_id,
+            defaults={"name": channel_title},
+        )
+        # keep the display name fresh if it changed
+        if source.name != channel_title:
+            source.name = channel_title
+            source.save(update_fields=["name"])
 
         Video.objects.create(
             title=title[:500],
