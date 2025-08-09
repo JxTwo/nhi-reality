@@ -21,6 +21,9 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Copy source code (used in prod, overridden in dev by volume)
 COPY src/ /app/
 
+# Collect staticfiles
+RUN python manage.py collectstatic --noinput || true
+
 # Create unprivileged user for runtime
 RUN adduser --disabled-password --no-create-home appuser
 USER appuser
