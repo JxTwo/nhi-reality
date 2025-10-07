@@ -1,22 +1,25 @@
 import logging
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 from django.db.utils import OperationalError, ProgrammingError
-from django.apps import apps
 
 def register_periodic_fetch():
     try:
-        schedule_qs = IntervalSchedule.objects.filter(every=60, period=IntervalSchedule.MINUTES)
-        schedule = schedule_qs.first()
+        # Every 24 hours
+        schedule = IntervalSchedule.objects.filter(
+            every=24, period=IntervalSchedule.HOURS
+        ).first()
         if not schedule:
-            schedule = IntervalSchedule.objects.create(every=60, period=IntervalSchedule.MINUTES)
+            schedule = IntervalSchedule.objects.create(
+                every=24, period=IntervalSchedule.HOURS
+            )
 
         PeriodicTask.objects.update_or_create(
             name="Fetch New Content",
             defaults={
-                "interval": schedule,
+                "interval": schedule,           # switch from minutes→hours
                 "task": "news.tasks.fetch_new_content",
+                "enabled": True,
             },
         )
     except (OperationalError, ProgrammingError) as e:
-        # Database might not be ready during initial migrations
-        logging.warning("Skipped periodic task registration (DB not ready): %s", str(e))
+        logging.warning("Skipped periodic task registration (DB not ready): %s", e)
