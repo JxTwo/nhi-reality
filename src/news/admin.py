@@ -2,8 +2,6 @@
 from django.contrib import admin
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.db.models import JSONField
-from django.contrib.admin.widgets import AdminJSONEditor
 
 from .models import (
     NewsSource,
@@ -13,18 +11,11 @@ from .models import (
     IngestionStatus,
 )
 
-# ---------- Inline/Widgets ----------
-JSON_OVERRIDES = {
-    JSONField: {"widget": AdminJSONEditor},
-}
-
-# ---------- News ----------
 @admin.register(NewsSource)
 class NewsSourceAdmin(admin.ModelAdmin):
     list_display = ("name", "url")
     search_fields = ("name", "url")
     ordering = ("name",)
-
 
 @admin.register(NewsArticle)
 class NewsArticleAdmin(admin.ModelAdmin):
@@ -34,17 +25,13 @@ class NewsArticleAdmin(admin.ModelAdmin):
     date_hierarchy = "published_at"
     ordering = ("-published_at", "title")
     autocomplete_fields = ("source",)
-    formfield_overrides = JSON_OVERRIDES
 
-
-# ---------- Video ----------
 @admin.register(VideoSource)
 class VideoSourceAdmin(admin.ModelAdmin):
     list_display = ("name", "channel_id", "last_fetched_at")
     search_fields = ("name", "channel_id")
     ordering = ("name",)
     readonly_fields = ("last_fetched_at",)
-
 
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
@@ -54,7 +41,6 @@ class VideoAdmin(admin.ModelAdmin):
     date_hierarchy = "published_at"
     ordering = ("-published_at", "title")
     autocomplete_fields = ("source",)
-    formfield_overrides = JSON_OVERRIDES
     readonly_fields = ("video_id_display",)
 
     @admin.display(description="Channel")
@@ -65,8 +51,6 @@ class VideoAdmin(admin.ModelAdmin):
     def video_id_display(self, obj):
         return obj.video_id
 
-
-# ---------- IngestionStatus (singleton) ----------
 @admin.register(IngestionStatus)
 class IngestionStatusAdmin(admin.ModelAdmin):
     list_display = (
@@ -77,25 +61,23 @@ class IngestionStatusAdmin(admin.ModelAdmin):
         "short_last_error",
     )
     readonly_fields = ("id",)
-    formfield_overrides = JSON_OVERRIDES
     ordering = ("id",)
 
     def has_add_permission(self, request):
-        # Prevent creating extra rows
+        # singleton: prevent creating new rows
         return False
 
     def has_delete_permission(self, request, obj=None):
         return False
 
     def changelist_view(self, request, extra_context=None):
-        # Redirect list → the single object’s change page (pk=1)
+        # Redirect list to the single object (pk=1)
         obj, _ = IngestionStatus.objects.get_or_create(pk=1)
-        url = reverse("admin:news_ingestionstatus_change", args=(obj.pk,))
-        return HttpResponseRedirect(url)
+        return HttpResponseRedirect(
+            reverse("admin:news_ingestionstatus_change", args=(obj.pk,))
+        )
 
     @admin.display(description="Last error (truncated)")
     def short_last_error(self, obj):
-        if not obj.last_error:
-            return ""
-        s = str(obj.last_error)
+        s = (obj.last_error or "")
         return s if len(s) <= 100 else s[:100] + "…"
