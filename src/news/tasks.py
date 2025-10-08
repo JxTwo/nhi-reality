@@ -17,7 +17,7 @@ def fetch_new_content():
 
     try:
         # Your existing fetchers
-        call_command("fetch_youtube")
+        # call_command("fetch_youtube")
         call_command("fetch_liberation_times")
         call_command("fetch_debrief")
 
