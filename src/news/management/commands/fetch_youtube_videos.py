@@ -24,9 +24,31 @@ def _get_api_key() -> str:
     return key
 
 
+def _normalize_playlist_id(pid: str | None) -> str | None:
+    """
+    Normalize playlist ids from various YouTube URL patterns.
+
+    - Standard playlist ids are "PL..."
+    - YouTube "show" urls frequently embed "VLPL..." (watch-as-playlist wrapper).
+      In that case, the playlist id usable with playlistItems.list is the same
+      string with the leading "VL" removed => "PL..."
+    """
+    if not pid:
+        return None
+    pid = str(pid).strip()
+    if pid.startswith("VLPL"):
+        return pid[2:]  # "VLPL..." -> "PL..."
+    return pid
+
+
 def _load_channels():
     """
     Load CHANNELS from news/config/youtube_channels.py
+
+    Supports:
+      - name (optional)
+      - channel_id (required)
+      - playlist_id (optional; can be PL... or VLPL...)
     """
     try:
         from news.config.youtube_channels import CHANNELS  # type: ignore
@@ -40,13 +62,23 @@ def _load_channels():
     for i, ch in enumerate(CHANNELS):
         if not isinstance(ch, dict):
             raise CommandError(f"CHANNELS[{i}] must be a dict")
+
         name = (ch.get("name") or "").strip()
         channel_id = (ch.get("channel_id") or "").strip()
+        playlist_id = _normalize_playlist_id(ch.get("playlist_id"))
+
         if not channel_id:
             raise CommandError(f"CHANNELS[{i}] is missing channel_id")
         if not name:
             name = channel_id
-        norm.append({"name": name, "channel_id": channel_id})
+
+        norm.append(
+            {
+                "name": name,
+                "channel_id": channel_id,
+                "playlist_id": playlist_id,  # None or normalized PL...
+            }
+        )
     return norm
 
 
@@ -104,9 +136,9 @@ class YouTubeClient:
 
         return uploads, channel_title
 
-    def list_uploads(self, uploads_playlist_id: str, max_items: int) -> list[dict]:
+    def list_playlist_items(self, playlist_id: str, max_items: int) -> list[dict]:
         """
-        Returns list of playlistItem resources (snippet + contentDetails).
+        Returns list of playlistItem resources (snippet + contentDetails) for any playlist_id.
         """
         items = []
         page_token = None
@@ -118,7 +150,7 @@ class YouTubeClient:
 
             params = {
                 "part": "snippet,contentDetails",
-                "playlistId": uploads_playlist_id,
+                "playlistId": playlist_id,
                 "maxResults": batch_size,
             }
             if page_token:
@@ -137,7 +169,7 @@ class YouTubeClient:
         """
         Fetch contentDetails (duration) etc. Needed to exclude shorts reliably.
         """
-        out = {}
+        out: dict[str, dict] = {}
         for i in range(0, len(video_ids), 50):
             chunk = video_ids[i : i + 50]
             data = self._get(
@@ -156,10 +188,15 @@ class YouTubeClient:
 
 
 class Command(BaseCommand):
-    help = "Fetch YouTube uploads for configured channels (uploads playlist). Shorts are excluded by default."
+    help = (
+        "Fetch YouTube videos for configured channels. "
+        "If playlist_id is configured (PL... or VLPL...), fetch that playlist; "
+        "otherwise fetch the channel uploads playlist. Shorts are excluded by default. "
+        "Optimization: only call videos.list for videos not already in DB."
+    )
 
     def add_arguments(self, parser):
-        parser.add_argument("--max-items", type=int, default=50, help="Max uploads per channel (default 50)")
+        parser.add_argument("--max-items", type=int, default=50, help="Max items per channel (default 50)")
         parser.add_argument(
             "--include-shorts",
             action="store_true",
@@ -204,8 +241,14 @@ class Command(BaseCommand):
 
         for ch in channels:
             channel_id = ch["channel_id"]
+            configured_playlist_id = ch.get("playlist_id")
 
-            logger.info("Fetching channel_id=%s (configured name=%s)", channel_id, ch["name"])
+            logger.info(
+                "Fetching channel_id=%s (configured name=%s) playlist_id=%s",
+                channel_id,
+                ch["name"],
+                configured_playlist_id or "",
+            )
 
             uploads_playlist_id, channel_title = yt.get_channel_uploads_playlist(channel_id)
             if sleep_s:
@@ -220,12 +263,16 @@ class Command(BaseCommand):
                 source.name = channel_title
                 source.save(update_fields=["name"])
 
-            playlist_items = yt.list_uploads(uploads_playlist_id, max_items=max_items)
+            # If a playlist_id is configured, fetch that playlist; otherwise fetch uploads.
+            effective_playlist_id = configured_playlist_id or uploads_playlist_id
+            playlist_items = yt.list_playlist_items(effective_playlist_id, max_items=max_items)
             if sleep_s:
                 time.sleep(sleep_s)
 
+            # Extract candidate items (newest-first from API).
             extracted = []
-            video_ids = []
+            candidate_urls = []
+            candidate_video_ids = []
 
             for it in playlist_items:
                 snippet = it.get("snippet") or {}
@@ -254,12 +301,39 @@ class Command(BaseCommand):
                         "playlist_item_raw": it,
                     }
                 )
-                video_ids.append(vid)
+                candidate_urls.append(url)
+                candidate_video_ids.append(vid)
 
-            # To exclude shorts by duration we need videos.list contentDetails.duration
+            if not extracted:
+                logger.info("No playlist items returned for channel_id=%s", channel_id)
+                source.last_fetched_at = dj_timezone.now()
+                source.save(update_fields=["last_fetched_at"])
+                continue
+
+            # --- Optimization: identify which of these are already in DB (by unique url). ---
+            existing_urls = set(
+                Video.objects.filter(url__in=candidate_urls).values_list("url", flat=True)
+            )
+
+            # Keep only "new" items for potential upsert.
+            # (We still allow updates of existing records if you want later; right now we treat them as no-op.)
+            new_rows = [row for row in extracted if row["url"] not in existing_urls]
+
+            if not new_rows:
+                logger.info(
+                    "No new videos for channel_id=%s (playlist=%s). Skipping videos.list and DB writes.",
+                    channel_id,
+                    effective_playlist_id,
+                )
+                source.last_fetched_at = dj_timezone.now()
+                source.save(update_fields=["last_fetched_at"])
+                continue
+
+            # Only fetch details for *new* video IDs when we need them to exclude shorts.
             details_by_id = {}
-            if not include_shorts and video_ids:
-                details_by_id = yt.videos_details(video_ids)
+            if not include_shorts:
+                new_video_ids = [row["video_id"] for row in new_rows]
+                details_by_id = yt.videos_details(new_video_ids)
                 if sleep_s:
                     time.sleep(sleep_s)
 
@@ -267,7 +341,8 @@ class Command(BaseCommand):
             updated = 0
             skipped = 0
 
-            for row in extracted:
+            # Persist only new items (idempotent; url unique keeps it safe).
+            for row in new_rows:
                 vid = row["video_id"]
 
                 # Default behavior: exclude shorts (<=60s) when duration is known.
@@ -281,12 +356,15 @@ class Command(BaseCommand):
                             skipped += 1
                             continue
 
-                raw_payload = {"playlistItem": row["playlist_item_raw"]}
+                raw_payload = {
+                    "playlistItem": row["playlist_item_raw"],
+                    "effective_playlist_id": effective_playlist_id,
+                }
                 if details_by_id and vid in details_by_id:
                     raw_payload["video"] = details_by_id[vid]
 
-                obj, was_created = Video.objects.update_or_create(
-                    url=row["url"],  # unique field in your model
+                _, was_created = Video.objects.update_or_create(
+                    url=row["url"],
                     defaults={
                         "title": row["title"],
                         "description": row["description"],
@@ -309,12 +387,14 @@ class Command(BaseCommand):
             total_skipped += skipped
 
             logger.info(
-                "Channel done: %s (%s) uploads_playlist=%s playlist_items=%d extracted=%d created=%d updated=%d skipped=%d",
+                "Channel done: %s (%s) uploads_playlist=%s effective_playlist=%s playlist_items=%d extracted=%d new=%d created=%d updated=%d skipped(shorts)=%d",
                 channel_title,
                 channel_id,
                 uploads_playlist_id,
+                effective_playlist_id,
                 len(playlist_items),
                 len(extracted),
+                len(new_rows),
                 created,
                 updated,
                 skipped,
