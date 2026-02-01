@@ -3,18 +3,30 @@ from django.shortcuts import render
 from news.models import NewsArticle, Video
 from core.utilities import normalize_date
 
+_ALLOWED_FILTERS = {"all", "articles", "videos"}
+_DEFAULT_FILTER = "videos"
+
+
 def news_list(request):
-    f = request.GET.get("type", "all").lower()
+    # Default to videos; clamp invalid values to videos as well.
+    f = (request.GET.get("type") or _DEFAULT_FILTER).lower()
+    if f not in _ALLOWED_FILTERS:
+        f = _DEFAULT_FILTER
+
     page_number = request.GET.get("page")
 
     # Precompute counts for the filter pills
     article_count = NewsArticle.objects.count()
     video_count = Video.objects.count()
-    counts = {"all": article_count + video_count, "articles": article_count, "videos": video_count}
+    counts = {
+        "all": article_count + video_count,
+        "articles": article_count,
+        "videos": video_count,
+    }
 
     # Pull (up to) 100 of each, then filter by requested type
     articles = NewsArticle.objects.order_by("-published_at")[:100] if f in ("all", "articles") else []
-    videos   = Video.objects.order_by("-published_at")[:100]       if f in ("all", "videos")   else []
+    videos = Video.objects.order_by("-published_at")[:100] if f in ("all", "videos") else []
 
     combined = []
     for item in articles:
@@ -28,13 +40,21 @@ def news_list(request):
         combined.append(item)
 
     # Sort by normalized date desc, then cap to 100 items total
-    top_100 = sorted(combined, key=lambda obj: obj.normalized_published_at, reverse=True)[:100]
+    top_100 = sorted(
+        combined,
+        key=lambda obj: obj.normalized_published_at,
+        reverse=True,
+    )[:100]
 
     paginator = Paginator(top_100, 10)
     page_obj = paginator.get_page(page_number)
 
-    return render(request, "news/news_list.html", {
-        "page_obj": page_obj,
-        "filter": f,
-        "counts": counts,
-    })
+    return render(
+        request,
+        "news/news_list.html",
+        {
+            "page_obj": page_obj,
+            "filter": f,
+            "counts": counts,
+        },
+    )

@@ -102,17 +102,19 @@
 
   {# Filter pills #}
   <nav class="filters" aria-label="Content filter">
-    <a class="filter-pill {% if filter == 'all' %}active{% endif %}"
-       href="{% url 'news_list' %}?type=all">
-      All ({{ counts.all }})
+    <a class="filter-pill {% if filter == 'videos' %}active{% endif %}"
+      href="{% url 'news_list' %}?type=videos">
+      Videos ({{ counts.videos }})
     </a>
+
     <a class="filter-pill {% if filter == 'articles' %}active{% endif %}"
-       href="{% url 'news_list' %}?type=articles">
+      href="{% url 'news_list' %}?type=articles">
       Articles ({{ counts.articles }})
     </a>
-    <a class="filter-pill {% if filter == 'videos' %}active{% endif %}"
-       href="{% url 'news_list' %}?type=videos">
-      Videos ({{ counts.videos }})
+
+    <a class="filter-pill {% if filter == 'all' %}active{% endif %}"
+      href="{% url 'news_list' %}?type=all">
+      All ({{ counts.all }})
     </a>
   </nav>
 
