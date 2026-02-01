@@ -127,20 +127,27 @@
         <p class="news-source">Source: {{ item.source.name }}</p>
 
       {% elif item.content_type == "video" %}
-        <h2><a href="https://www.youtube.com/watch?v={{ item.video_id }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a></h2>
+        <h2>
+          <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">
+            {{ item.title }}
+          </a>
+        </h2>
+
         <p><strong>{{ item.published_at|date:"M. j, Y" }}</strong></p>
-        <div>
-          <iframe width="560" height="315"
-                  src="https://www.youtube.com/embed/{{ item.video_id }}"
-                  title="{{ item.title }}"
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen>
-          </iframe>
-        </div>
-        <p>{{ item.description|truncatewords:30 }}</p>
+
+        <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" style="display:inline-block;">
+          <img
+            src="https://i.ytimg.com/vi/{{ item.video_id }}/hqdefault.jpg"
+            alt="Thumbnail for {{ item.title }}"
+            loading="lazy"
+            style="border-radius:4px; max-width:100%; height:auto; display:block;"
+          />
+        </a>
+
+        <p style="margin-top:.75rem;">{{ item.description|truncatewords:30 }}</p>
         <p class="news-source">Channel: {{ item.channel_title }}</p>
       {% endif %}
+
     </div>
   {% endfor %}
 
