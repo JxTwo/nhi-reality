@@ -182,8 +182,6 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": REDIS_CACHE_URL,
         "TIMEOUT": 300,
-        "OPTIONS": {
-            "KEY_PREFIX": "cache",
-        },
+        "KEY_PREFIX": "cache", 
     }
 }
