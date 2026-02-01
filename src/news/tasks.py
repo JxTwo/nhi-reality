@@ -9,8 +9,18 @@ from contextlib import contextmanager
 from celery import shared_task
 from django.core.cache import cache
 from django.core.management import call_command
+from django.db import connections
+from django.db.utils import OperationalError
 
 logger = logging.getLogger(__name__)
+
+
+def _db_ok() -> bool:
+    try:
+        connections["default"].cursor()
+        return True
+    except OperationalError:
+        return False
 
 
 @contextmanager
@@ -57,6 +67,11 @@ def fetch_all_news(self) -> dict:
     Runs all fetchers in a deterministic sequence.
     Uses a cache lock to avoid duplicates/overlap.
     """
+
+    if not _db_ok():
+        logger.error("fetch_all_news: database unreachable; skipping run")
+        return {"status": "skipped", "reason": "db_unreachable"}
+
     lock_seconds = int(os.getenv("NEWS_FETCH_LOCK_SECONDS", "1800"))  # 30 min
     lock_key = os.getenv("NEWS_FETCH_LOCK_KEY", "lock:news:fetch_all")
 
