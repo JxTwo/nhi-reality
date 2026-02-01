@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import environ
 from django.core.exceptions import ImproperlyConfigured
+from celery.schedules import crontab
 
 # Initialize environment
 env = environ.Env(
@@ -144,7 +145,35 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
+# Celery configuration
 CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+
+CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://redis:6379/0")  # optional but handy
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+# You currently run Django in UTC. Keep Celery aligned.
+CELERY_TIMEZONE = TIME_ZONE  # "UTC"
+CELERY_ENABLE_UTC = True
+
+# Robustness: avoid stuck connections and allow worker to survive redis hiccups
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "visibility_timeout": 60 * 60,  # 1h; task returns to queue if worker dies mid-run
+    "socket_timeout": 10,
+    "socket_connect_timeout": 10,
+    "retry_on_timeout": True,
+}
+
+# Code-driven schedule: every 4 hours (at :00)
+CELERY_BEAT_SCHEDULE = {
+    "news-fetch-all-every-4-hours": {
+        "task": "news.tasks.fetch_all_news",
+        "schedule": crontab(minute=0, hour="*/4"),
+    }
+}
 
 CACHES = {
     'default': {

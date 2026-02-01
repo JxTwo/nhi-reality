@@ -1,38 +1,94 @@
 # news/tasks.py
+from __future__ import annotations
+
+import os
+import uuid
+import logging
+from contextlib import contextmanager
+
 from celery import shared_task
+from django.core.cache import cache
 from django.core.management import call_command
-from django.utils import timezone
 
-@shared_task
-def fetch_new_content():
-    # Import inside the task to avoid import cycles during app startup
-    from news.models import IngestionStatus, NewsArticle, Video
+logger = logging.getLogger(__name__)
 
-    status = IngestionStatus.get()
-    status.last_run_started = timezone.now()
-    status.save(update_fields=["last_run_started"])
 
-    before_articles = NewsArticle.objects.count()
-    before_videos = Video.objects.count()
+@contextmanager
+def cache_lock(key: str, timeout: int):
+    """
+    Best-effort distributed lock using Django cache (Redis).
+    Prevents duplicate runs if beat is accidentally running more than once
+    or if tasks overlap.
+    """
+    token = str(uuid.uuid4())
+    acquired = cache.add(key, token, timeout=timeout)
+    if not acquired:
+        yield False
+        return
 
     try:
-        # Your existing fetchers
-        # call_command("fetch_youtube")
-        call_command("fetch_liberation_times")
-        call_command("fetch_debrief")
+        yield True
+    finally:
+        try:
+            if cache.get(key) == token:
+                cache.delete(key)
+        except Exception:
+            logger.exception("Lock release failed for key=%s", key)
 
-        after_articles = NewsArticle.objects.count()
-        after_videos = Video.objects.count()
 
-        new_count = (after_articles - before_articles) + (after_videos - before_videos)
-
-        status.last_success_any = timezone.now()
-        if new_count > 0:
-            status.last_success_with_new = status.last_success_any
-        status.last_error = None
-        status.save(update_fields=["last_success_any", "last_success_with_new", "last_error"])
-
+def _run_command(name: str, **kwargs) -> dict:
+    try:
+        logger.info("Running command=%s kwargs=%s", name, kwargs)
+        call_command(name, **kwargs)
+        return {"status": "ok"}
     except Exception as e:
-        status.last_error = f"{timezone.now().isoformat()} | {type(e).__name__}: {e}"
-        status.save(update_fields=["last_error"])
-        raise
+        logger.exception("Command failed: %s", name)
+        return {"status": "error", "error": str(e)}
+
+
+@shared_task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 3},
+)
+def fetch_all_news(self) -> dict:
+    """
+    Runs all fetchers in a deterministic sequence.
+    Uses a cache lock to avoid duplicates/overlap.
+    """
+    lock_seconds = int(os.getenv("NEWS_FETCH_LOCK_SECONDS", "1800"))  # 30 min
+    lock_key = os.getenv("NEWS_FETCH_LOCK_KEY", "lock:news:fetch_all")
+
+    with cache_lock(lock_key, timeout=lock_seconds) as acquired:
+        if not acquired:
+            logger.info("fetch_all_news: lock not acquired; skipping run")
+            return {"status": "skipped", "reason": "lock_not_acquired"}
+
+        logger.info("fetch_all_news: starting")
+
+        results = {}
+
+        # Articles
+        if os.getenv("NEWS_FETCH_ARTICLES", "1") == "1":
+            results["debrief"] = _run_command("fetch_debrief")
+            results["liberation_times"] = _run_command("fetch_liberation_times")
+        else:
+            results["articles"] = {"status": "disabled"}
+
+        # YouTube
+        if os.getenv("NEWS_FETCH_YOUTUBE", "1") == "1":
+            max_items = int(os.getenv("YOUTUBE_MAX_ITEMS", "50"))
+            include_shorts = os.getenv("YOUTUBE_INCLUDE_SHORTS", "0") == "1"
+            sleep_s = float(os.getenv("YOUTUBE_API_SLEEP", "0"))
+
+            kwargs = {"max_items": max_items, "sleep": sleep_s}
+            if include_shorts:
+                kwargs["include_shorts"] = True
+
+            results["youtube"] = _run_command("fetch_youtube_videos", **kwargs)
+        else:
+            results["youtube"] = {"status": "disabled"}
+
+        logger.info("fetch_all_news: complete results=%s", results)
+        return {"status": "ok", "results": results}

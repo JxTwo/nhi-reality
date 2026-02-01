@@ -1,17 +1,13 @@
-from __future__ import absolute_import, unicode_literals
+# core/celery.py
 import os
-
 from celery import Celery
-from django.conf import settings
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 
-app = Celery('core')
+app = Celery("core")
 
-app.config_from_object(settings, namespace='CELERY')
-app.conf.accept_content = ["json"]
-app.conf.task_serializer = "json"
-app.conf.result_backend = settings.CELERY_BROKER_URL
+# Pull CELERY_* settings from Django settings.py
+app.config_from_object("django.conf:settings", namespace="CELERY")
 
-# Limits which apps are scanned for Celery tasks
-app.autodiscover_tasks(['news'])
+# Find tasks.py in each installed app
+app.autodiscover_tasks()
