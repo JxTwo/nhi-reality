@@ -147,16 +147,9 @@ YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
-def _redis_with_db(url: str, db: int) -> str:
-    # If url already has a /db suffix, replace it; otherwise append.
-    if url.rstrip("/").rsplit("/", 1)[-1].isdigit():
-        base = url.rsplit("/", 1)[0]
-        return f"{base}/{db}"
-    return f"{url.rstrip('/')}/{db}"
-
 # Celery configuration
-CELERY_BROKER_URL = _redis_with_db(REDIS_URL, 0)
-CELERY_RESULT_BACKEND = _redis_with_db(REDIS_URL, 0)
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -182,12 +175,15 @@ CELERY_BEAT_SCHEDULE = {
     }
 }
 
-REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", _redis_with_db(REDIS_URL, 1))
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", REDIS_URL)
 
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": REDIS_CACHE_URL,
         "TIMEOUT": 300,
+        "OPTIONS": {
+            "KEY_PREFIX": "cache",
+        },
     }
 }
